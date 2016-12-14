@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+
+        <title>Atelier MiNET - iptables</title>
+
+        <meta name="author" content="Anthony Verez, Alexis Mousset">
+
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <link rel="stylesheet" href="iptable_files/reveal.css">
+        <link rel="stylesheet" href="iptable_files/default.css" id="theme">
+
+        <!-- For syntax highlighting -->
+        <link rel="stylesheet" href="iptable_files/zenburn.css">
+
+        <!-- If the query includes 'print-pdf', use the PDF print sheet -->
+        <script>
+            document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+        </script><link rel="stylesheet" href="iptable_files/paper.css" type="text/css" media="print">
+
+        <!--[if lt IE 9]>
+        <script src="lib/js/html5shiv.js"></script>
+        <![endif]-->
+    </head>
+
+    <body style="transition: -webkit-transform 0.8s ease 0s;">
+
+        <div class="reveal default center" data-transition-speed="default" data-background-transition="default">
+
+            <!-- Any section element inside of this container is displayed as a slide -->
+
+<div class="slides" style="width: 960px; height: 700px; transform: translate(-50%, -50%) scale(1) translate(50%, 50%);">
+<section style="top: -348px; display: block;" class="present">
+<h3 data-fragment-index="0">Configuring network</h3>
+</section>
+<section style="top: -348px; display: block;" class="present">
+<p>On debian : <b>/etc/network/interfaces</b></p>
+<pre><code>
+auto eth0 
+iface eth0 inet dhcp
+</code></pre>
+</section>
+
+<section style="top: -348px; display: block;" class="present">
+<pre><code>
+auto eth0 
+iface eth0 inet static
+    address 157.159.40.152
+    netmask 255.255.255.0
+    gateway 157.159.40.1
+</code></pre>
+</section>
+
+<section style="top: -348px; display: block;" class="present">
+<pre><code>
+auto eth0 
+allow-hotplug eth0
+iface eth0 inet6 dhcp 
+iface eth0 inet dhcp
+</code></pre>
+</section>
+
+
+<section style="top: -348px; display: block;" class="present">
+<pre><code>
+auto br0
+iface br0 inet dhcp
+        bridge_ports eth0
+        bridge_stp off
+        bridge_fd 0
+        bridge_maxwait 0
+</code></pre>
+</section>
+
+<section style="top: -348px; display: block;" class="present">
+<pre><code>
+auto br0
+iface br0 inet static
+        address 157.159.65.23
+        netmask 255.255.255.0
+        bridge_ports eth0
+        bridge_stp off
+        bridge_fd 0
+        bridge_maxwait 0
+</code></pre>
+</section>
+
+<section style="top: -348px; display: block;" class="present">
+<pre><code>
+auto br0
+iface br0 inet static
+        address 157.159.65.23
+        netmask 255.255.255.0
+        bridge_ports eth0 veth0
+        bridge_stp off
+        bridge_fd 0
+        bridge_maxwait 0
+
+auto veth0
+iface veth0 inet static
+	address 157.159.65.24
+        netmask 255.255.255.0
+</code></pre>
+</section>
+
+<section style="top: -348px; display: block;" class="present">
+See your interfaces :
+<pre><code>$ ls /sys/class/net/
+docker0@  enp5s0f1@  lo@  wlp4s0@</code></pre>
+<pre><code>$ ifconfig 
+
+wlp4s0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+        inet 10.11.114.151  netmask 255.255.0.0  broadcast 10.11.255.255
+        inet6 fe80::aefd:ceff:fe83:f3f1  prefixlen 64  scopeid 0x20<link>
+        ether ac:fd:ce:83:f3:f1  txqueuelen 1000  (Ethernet)
+        RX packets 720035  bytes 968821747 (923.9 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 307702  bytes 37342761 (35.6 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536
+        inet 127.0.0.1  netmask 255.0.0.0
+        inet6 ::1  prefixlen 128  scopeid 0x10<host>
+        loop  txqueuelen 1  (Local Loopback)
+        RX packets 99809  bytes 18992440 (18.1 MiB)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 99809  bytes 18992440 (18.1 MiB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+</code></pre>
+</section>
+
+
+
+
+    <section style="top: -348px; display: block;" class="present">
+        <h1 data-fragment-index="0">iptables<br>
+        </h1>
+<p>
+        <br>
+    </p>
+<img style="max-height: none; max-width: none;" src="iptable_files/lolcat-firewall-cat.jpg">
+</section>
+
+
+<section style="top: -164px; display: block;" class="future" hidden="">
+        <h2>Iptables - History</h2>
+<p>ipfwadm (2.0), ipchains (2.2), iptables (2.4) and nftables (3.13)...</p>
+<p>stateful firewall, Netfilter/Iptables</p>
+<p>iptables + ip6tables + arptables + ebtables = Xtables</p>
+</section>
+<section style="top: -263.5px; display: block;" class="future" hidden="">
+        <h2>Iptables - Structure</h2>
+<p>Hooks in the kernel (128 modules...)</p>
+<pre>               ________                          _____                _________
+              /        \                        /     \              /         \
+Entrance ---&gt;|PREROUTING|----&gt; [Decision] ----&gt;|FORWARD|-----&gt;-----&gt;|POSTROUTING|---&gt; Out
+              \________/       [de routage]     \_____/      ^       \_________/
+                                    |                        |
+                                    v                      ____
+                                   ___                    /    \
+                                  /   \                  |OUTPUT|
+                                 |INPUT|                  \____/
+                                  \___/                      ^
+                                    |                        |
+                                    ----&gt; Local process ----
+</pre>
+</section>
+<section style="top: -164px; display: block;" class="future" hidden="">
+        <h2>Iptables - Chaines</h2>
+<p>Liste of rules</p>Allow to organize rules<p></p>
+<p>Allow to avoid (partly) duplication ("GOTO")</p>
+</section>
+<section style="top: -337px; display: none;" class="future" hidden="">
+        <h2>Iptables - Chaines</h2>
+<img style="max-height: none; max-width: none;" src="iptable_files/table_subtraverse.jpg">
+</section>
+<section style="top: -190.5px; display: none;" class="future" hidden="">
+<h2>Iptables - Tables</h2>
+<p>A table correspond a table correspond to some kind of ation</p>
+<p>Table : WHAT</p>
+<p>Chaine : WHEN</p>
+<p>A rule : Table + Chaine + IF [...] THEN [...]</p>
+</section>
+<section style="top: -350px; display: none;" class="future" hidden="">
+        <h2>Iptables - Structure</h2>
+        <img style="max-height: none; max-width: none;" src="iptable_files/tables_traverse.jpg">
+</section>
+<section style="top: -344.5px; display: none;" class="future" hidden=""> 
+        <h2>Iptables - Structure</h2>
+<img style="max-height: none; max-width: none;" src="iptable_files/Netfilter-packet-flow.svg">
+</section>
+<section style="top: -162px; display: none;" class="future" hidden=""><h2>Iptables - Interface</h2>
+   <p>Interface : command line</p>
+<pre><code data-trim="">iptables -L [chain]</code></pre>
+<pre><code data-trim="">iptables -nvL [chain]</code></pre>
+</section>
+<section style="top: -157.5px; display: none;" class="future" hidden="">
+   <h2>Interface en ligne de commande</h2>
+   <pre><code data-trim="">iptables -N chain</code></pre>
+<pre><code data-trim="">iptables -F [chain]</code></pre>
+<pre><code data-trim="">iptables -X [chain]</code></pre>
+</section>
+<section style="top: -229px; display: none;" class="future" hidden="">
+   <h2>Using on a server</h2>
+   <p>Using as a service</p>
+   <p>Two ways :
+   </p><ul><li>iptables-save/restore</li><li>script shell</li></ul>
+   <p>No service running, only instant kernel configuration</p>
+</section>
+<section style="top: -217px; display: none;" class="future" hidden="">
+        <h2>Bridging firewall</h2>
+<p>Also called transparent firewall</p>
+<p>No configuration required</p>
+<p>Act as a switch (bridge)</p>
+<p>Network card in promiscuous mode</p>
+</section>
+<section style="top: -221px; display: none;" class="future" hidden="">
+    <h2>Rules : global policies</h2>
+    Action applied when no rules
+    <pre><code data-trim="">root@netantho-kvm:/home/netantho# iptables -L
+root@netantho-kvm:/home/netantho# iptables -L FORWARD
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+root@netantho-kvm:/home/netantho# iptables -P FORWARD DROP
+root@netantho-kvm:/home/netantho# iptables -L FORWARD
+Chain FORWARD (policy DROP)
+target     prot opt source               destination
+</code></pre>
+</section>
+<section style="top: -350px; display: none;" class="future" hidden="">
+    <h2>Rules- Actions</h2>
+    <br>
+    Block
+    <pre><code data-trim="">$IPT -A INPUT -j DROP</code></pre>
+    Reject
+    <pre><code data-trim="">$IPT -A DUMP -p tcp -j REJECT --reject-with tcp-reset</code></pre>
+    <pre><code data-trim="">$IPT -A DUMP -p udp -j REJECT --reject-with icmp-port-unreachable</code></pre>
+    Accept
+    <pre><code data-trim="">$IPT -A OUTPUT -j ACCEPT</code></pre>
+    Send to an other chain
+    <pre><code data-trim="">$IPT -N adh-out
+$IPT -A FORWARD -s 157.159.41.0/24 -j adh-out</code></pre>
+</section>
+<section style="top: -266px; display: none;" class="future" hidden="">
+    <h2>Rules - network interfaces</h2>
+    <br>
+    Input
+    <pre><code data-trim="">$IPT -A INPUT -i lo</code></pre>
+    Output
+    <pre><code data-trim="">$IPT -A FORWARD -o eth2 -j ACCEPT</code></pre>
+    Both
+    <pre><code data-trim="">$IPT -A FORWARD -i eth1 -o eth2 -j ACCEPT</code></pre>
+</section>
+<section style="top: -266px; display: none;" class="future" hidden="">
+    <h2>Rule - IP</h2>
+    <br>
+    Source
+    <pre><code data-trim="">$IPT -A OUTPUT -s 157.159.40.0/24 -j ACCEPT</code></pre>
+    Destination
+    <pre><code data-trim="">$IPT -A OUTPUT -d 8.8.8.8 -j ACCEPT</code></pre>
+    Source and destination
+    <pre><code data-trim="">$IPT -A OUTPUT -s 157.159.40.0/24 -d 8.8.8.8 -j ACCEPT</code></pre>
+</section>
+<section style="top: -323.5px; display: none;" class="future" hidden="">
+    <h2>Rules- ICMP</h2>
+    <br>
+    Global
+    <pre><code data-trim="">$IPT -A INPUT  -j ACCEPT</code></pre>
+    Per type
+    <pre><code data-trim="">$IPT -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+$IPT -A INPUT -p icmp --icmp-type 8 -j ACCEPT # -&gt; echo-request
+$IPT -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
+$IPT -A INPUT -p icmp --icmp-type 0 -j ACCEPT # -&gt; echo-reply
+</code></pre>
+    See <pre><code data-trim="">/sbin/iptables -p icmp -h</code></pre>
+    and <a href="http://www.iana.org/assignments/icmp-parameters/icmp-parameters.xhtml">code numbers</a>
+</section>
+<section style="top: -329.5px; display: none;" class="future" hidden="">
+    <h2>Rules - UDP</h2>
+    Source port
+    <pre><code data-trim="">$IPT -A INPUT -p udp --sport 23 -j DROP</code></pre>
+    Destination port
+    <pre><code data-trim="">$IPT -A INPUT -p udp --dport 23 -j DROP</code></pre>
+    Rules priority
+    <pre><code data-trim="">$IPT -A INPUT -p udp --dport 23 -j DROP
+$IPT -A INPUT -p udp -d 8.8.8.8 --dport 23 -j ACCEPT # ne sera jamais atteinte</code></pre><br>
+    Good to know : With UDP adresses IP can easily be spoofed, especially during DDoS attacks.
+</section>
+<section style="top: -350px; display: block;" class="future" hidden="">
+    <h2>Rules - TCP</h2>
+    Ports
+    <pre><code data-trim="">$IPT -A INPUT -p tcp --sport 21 -j DROP</code></pre>
+    States and Comments
+    <pre><code data-trim="">$IPT -A INPUT -p tcp -m conntrack --ctstate ESTABLISHED,RELATED -m comment --comment "Accepter connexions deja etablies" -j ACCEPT
+$IPT -A INPUT -d 7.7.7.7 -p tcp -j ACCEPT # regle ne s'appliquant qu'au SYN</code></pre>
+    <pre><code data-trim="">$IPT -A DoS -m conntrack --ctstate INVALID -m comment --comment "Drop invalid states" -j DROP</code></pre>
+    Negation and TCP flags
+    <pre><code data-trim="">$IPT -A portscan -p tcp ! --syn -m conntrack --ctstate NEW -m comment --comment "Drop new TCP connexion without SYN" -j DROP</code></pre>
+    <pre><code data-trim="">$IPT -A portscan -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -j DROP</code></pre>
+    Limit module
+    <pre><code data-trim="">$IPT -A portscan -p tcp -m tcp --tcp-flags FIN,SYN,RST,PSH,ACK,URG FIN,PSH,URG -m limit --limit 30/min -j RETURN</code></pre>
+</section>
+<section style="top: -106px; display: block;" class="future" hidden="">
+    <h2>Logging (one of the solutions)</h2>
+    <a href="http://www.thegeekstuff.com/2012/08/iptables-log-packets/">
+        Good tuto donThe Geek Stuff
+    </a>
+</section>
+<section style="top: -84px; display: block;" class="future" hidden="">
+    <h2>Questions?</h2>
+</section>
+
+<!-- $IPT -A INPUT -p all -m conntrack --ctstate ESTABLISHED,RELATED -m comment --comment "Accepter connexions deja etablies" -j ACCEPT -->
+
+        <script src="iptable_files/head.js"></script>
+        <script src="iptable_files/reveal.js"></script>
+
+        <script>
+
+            // Full list of configuration options available here:
+            // https://github.com/hakimel/reveal.js#configuration
+            Reveal.initialize({
+                controls: true,
+                progress: true,
+                history: true,
+                center: true,
+
+                theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+                transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+
+                // Parallax scrolling
+                // parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+                // parallaxBackgroundSize: '2100px 900px',
+
+                // Optional libraries used to extend on reveal.js
+                dependencies: [
+                    { src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+                    { src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    { src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+                    // { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+                    { src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+                ]
+            });
+
+        </script>
+
+    
+
+
+</div><div class="backgrounds"><div class="slide-background present"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div><div class="slide-background future"></div></div><div class="progress" style="display: block;"><span style="width: 0px;"></span></div><aside class="controls" style="display: block;"><div class="navigate-left"></div><div class="navigate-right enabled"></div><div class="navigate-up"></div><div class="navigate-down"></div></aside><div class="slide-number"></div><div class="state-background"></div><div class="pause-overlay"></div></div><script type="text/javascript" src="iptable_files/zoom.js"></script><script type="text/javascript" src="iptable_files/notes.js"></script></body></html>
